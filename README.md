@@ -1,9 +1,6 @@
-# Nextcloud-Server
+# nextcloud-server
 [AWS CloudFormation](https://aws.amazon.com/cloudformation/) template that provisions an EC2 instance running [Nextcloud](https://nextcloud.com/) file synchronization and sharing server, with a new [Amazon S3](https://aws.amazon.com/s3/) bucket as primary storage and [AWS Backup](https://aws.amazon.com/s3/) for data protection. Includes option to mount existing S3 bucket.
 
-
-## Notice
-The template offers the option to install [Webmin](https://github.com/webmin/webmin) which is released under [BSD-3-Clause](https://github.com/webmin/webmin?tab=BSD-3-Clause-1-ov-file) license. Usage of template indicates acceptance of license agreements of all software that is installed in the EC2 instance. 
 
 
 ## Architecture diagram
@@ -34,10 +31,10 @@ Remote Administration
 - `ingressIPv4`: allowed IPv4 source prefix to remote administration services, e.g. `1.2.3.4/32`. You can get your source IP from [https://checkip.amazonaws.com](https://checkip.amazonaws.com). Use `127.0.0.1/32` to block incoming access from public internet. Default is `0.0.0.0/0`. 
 - `ingressIPv6`: allowed IPv6 source prefix to remote administration services. Use `::1/128` to block all incoming IPv6 access. Default is `::/0`
 - `allowSSHport`: allow inbound SSH. Option does not affect [EC2 Instance Connect](https://aws.amazon.com/blogs/compute/new-using-amazon-ec2-instance-connect-for-ssh-access-to-your-ec2-instances/) access. Default is `No`
-- `installDCV`: install graphical desktop environment and [NICE DCV](https://aws.amazon.com/hpc/dcv/) server. Default is `No`
+- `installDCV`: install graphical desktop environment and [Amazon DCV](https://aws.amazon.com/hpc/dcv/) server. Default is `No`
 - `installWebmin`: install [Webmin](https://webmin.com/) web-based system administration tool. Default is `No`
 
-SSH, NICE DCV and Webmin inbound access from internet are restricted to `ingressIPv4` and `ingressIPv6` IP prefixes. 
+SSH, DCV and Webmin inbound access from internet are restricted to `ingressIPv4` and `ingressIPv6` IP prefixes. 
 
 Nextcloud
 - `adminUserName`: Nextcloud admin username. Default is `admin`
@@ -63,7 +60,7 @@ AWS Backup
 - `backupResource`: option to backup EC2 instance, S3 bucket, existing S3 bucket mounted as external storage, or none. [Versioning](https://docs.aws.amazon.com/AmazonS3/latest/userguide/Versioning.html) must be enabled on S3 bucket mounted as external storage before [AWS Backup](https://docs.aws.amazon.com/AmazonS3/latest/userguide/backup-for-s3.html) can back it up. Default is `EC2-and-S3` 
 - `scheduleExpression`: CRON expression specifying when AWS Backup initiates a backup job. Default is `cron(0 1 ? * * *)`
 - `scheduleExpressionTimezone`: timezone in which the schedule expression is set. Default is `Etc/UTC`
-- `deleteAfterDays`: number of days after creation that a recovery point is deleted. Default is `7` days
+- `deleteAfterDays`: number of days after creation that a recovery point is deleted. Default is `35` days
 
 
 It may take more than 30 minutes to provision the entire stack. After your stack has been successfully created, its status changes to **CREATE_COMPLETE**.
@@ -72,7 +69,7 @@ It may take more than 30 minutes to provision the entire stack. After your stack
 ### CloudFormation Outputs
 The following are available in **Outputs** section 
 
-- `DCVwebConsole` (if `installDCV` is `Yes`): NICE DCV web browser console URL link. Login as user specified in *Description* field. 
+- `DCVwebConsole` (if `installDCV` is `Yes`): DCV web browser console URL link. Login as user specified in *Description* field. 
 - `EC2console`: EC2 console URL link to your EC2 instance
 - `EC2instanceConnect`: [EC2 Instance Connect](https://aws.amazon.com/blogs/compute/new-using-amazon-ec2-instance-connect-for-ssh-access-to-your-ec2-instances/) URL link. Functionality is only available under [certain conditions](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-connect-prerequisites.html)
 - `NextcloudLogUrl`: Cloudwatch [log group](https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/Working-with-log-groups-and-streams.html) with the contents of your EC2 instance [nextcloud log](https://docs.nextcloud.com/server/stable/admin_manual/configuration_server/logging_configuration.html)
@@ -126,7 +123,7 @@ sudo apachetl -t
 ```
 
 Reload Apache server
-```
+``` 
 sudo systemctl reload apache2
 ```
 
@@ -202,7 +199,7 @@ The created IAM role can be located in CloudFormation console stack **Resources*
 }
 ```
 
-An [IAM user](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_users.html) with attached [policy](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_managed-vs-inline.html#inline-policies) is used for S3 external storage access. Using EC2 IAM role for external storage currently generates errors in nextcloud.log. ([Issue #46400](https://github.com/nextcloud/server/issues/46400)) The IAM user can be located in CloudFormation **Resources** section where `Logical ID` is **iamUser**, and you may want to configure the associated policy `aws:SourceIp` value. 
+An [IAM user](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_users.html) with attached [policy](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_managed-vs-inline.html#inline-policies) is used for S3 external storage access. Using EC2 IAM role for external storage currently generates errors in nextcloud.log. https://github.com/kkpkishan/nextcloud-server.git The IAM user can be located in CloudFormation **Resources** section where `Logical ID` is **iamUser**, and you may want to configure the associated policy `aws:SourceIp` value. 
 
 To use its credentials to mount other S3 buckets in your AWS account as [external storage](https://docs.nextcloud.com/server/latest/admin_manual/configuration_files/external_storage/amazons3.html), modify associated IAM policy `Resource` key and add your desired S3 bucket names. The access key and secret can be retrieved by running `sudo grep secret /root/install-nextcloud.sh`.
 
@@ -215,7 +212,7 @@ To strengthen data security posture, you can enable [Amazon Macie](https://aws.a
 To futher secure your EC2 instance, you may want to
 - Restrict remote administration access to your IP address only (`ingressIPv4` and `ingressIPv6`)
 - Disable SSH access from public internet (`allowSSHport`). Use [EC2 Instance Connect](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-connect-methods.html#ec2-instance-connect-connecting-console) or [SSM Session Manager](https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-sessions-start.html#start-ec2-console) for in-browser terminal access. If you have [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) and [Session Manager plugin for the AWS CLI](https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html) installed, you can start a session using [AWS CLI](https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-sessions-start.html#sessions-start-cli) or [SSH](https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-sessions-start.html#sessions-start-ssh)
-- Remove NICE DCV web browser client package by running the command `sudo apt remove -y nice-dcv-web-viewer`. Connect using native Windows, MacOS or Linux [client](https://docs.aws.amazon.com/dcv/latest/userguide/client.html)
+- Remove DCV web browser client package by running the command `sudo apt remove -y nice-dcv-web-viewer`. Connect using native Windows, MacOS or Linux [client](https://www.amazondcv.com/)
 - Deploy EC2 instance in a private subnet. Use [Application Load Balancer](https://aws.amazon.com/elasticloadbalancing/application-load-balancer/) and [AWS WAF](https://aws.amazon.com/waf/) to [protect your EC2 instance](https://repost.aws/knowledge-center/waf-protect-ec2-instance). You can use [AWS Certificate Manager](https://aws.amazon.com/certificate-manager/) to [request a public HTTPS certificate](https://docs.aws.amazon.com/acm/latest/userguide/gs-acm-request-public.html) and [associate it](https://repost.aws/knowledge-center/associate-acm-certificate-alb-nlb) with your Application Load Balancer
 - Enable [Amazon Inspector](https://docs.aws.amazon.com/inspector/latest/user/what-is-inspector.html) to automatically scan EC2 instance for software vulnerabilities and unintended network exposure
 - Enable [Amazon GuardDuty](https://docs.aws.amazon.com/guardduty/latest/ug/what-is-guardduty.html) and [GuardDuty Malware Protection for EC2](https://docs.aws.amazon.com/guardduty/latest/ug/malware-protection.html) to detect potentially malicious activity in your AWS account
